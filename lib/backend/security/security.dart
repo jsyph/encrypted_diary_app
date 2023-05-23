@@ -14,6 +14,7 @@ export 'decryption_result.dart';
 const _defaultIVLength = 8;
 const _defaultSecureStorageKeyName = 'key';
 const _defaultSecureStorageKeyHashName = 'key_hash';
+const _defaultHiveSecureKeyLength = 32;
 
 /// Contains all the methods necessary to securely hash, encrypt, decrypt data, and authenticate user biometrics
 /// Things that are stored on the phone:
@@ -23,6 +24,26 @@ final class Security {
   static final _localAuthentication = LocalAuthentication();
   static final _logger = Logging().logger;
   static const _secureKeyStorage = FlutterSecureStorage();
+
+  const Security();
+
+  /// Checks if a hive key is found
+  Future<bool> hiveKeyExists() async {
+    final hiveKey =
+        await _secureKeyStorage.read(key: _defaultSecureStorageKeyName);
+    if (hiveKey == null) {
+      return false;
+    }
+    return true;
+  }
+
+  /// Creates a new hive key, and securely stores it
+  Future<List<int>> newHiveKey(String userPassword) async {
+    final secureRandom = SecureRandom(_defaultHiveSecureKeyLength);
+    await storeHiveKey(userPassword, secureRandom.utf8);
+
+    return secureRandom.bytes;
+  }
 
   /// Authenticate Biometrics
   Future<bool> authenticateBiometrics() async {
@@ -69,7 +90,9 @@ final class Security {
 
     if (hiveDecryptedKeyHash == storedKeyHash) {
       _logger.i('Decryption Success');
-      return DecryptionSuccess(hiveDecryptedKey);
+      return DecryptionSuccess(
+        utf8.encode(hiveDecryptedKey),
+      );
     }
 
     return DecryptionFailure();

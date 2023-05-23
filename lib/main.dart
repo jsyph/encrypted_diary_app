@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 
+import 'backend/backend.dart';
 import 'backend/security/security.dart';
 
+Repository? repo;
+
 void main() async {
+  repo = await Repository.init();
   runApp(const MyApp());
 }
 
@@ -35,11 +39,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  static const unEncryptedHiveKey =
-      r'123';
-
-  static const userPassword = 'test123';
-
+  bool expand = false;
   final security = Security();
 
   @override
@@ -50,25 +50,71 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-          child: Column(
-        children: [
-          const Text(unEncryptedHiveKey),
-          MaterialButton(
-            child: const Text('Encrypt password'),
-            onPressed: () {
-              security
-                  .storeHiveKey(userPassword, unEncryptedHiveKey)
-                  .then((value) => null);
-            },
-          ),
-          MaterialButton(
-            child: const Text('Decrypt password'),
-            onPressed: () {
-              security.getHiveKey(userPassword).then((value) => null);
-            },
-          ),
-        ],
-      )),
+        child: Column(
+          children: [
+            
+          ],
+        ),
+      ),
     );
+  }
+}
+
+class ExpandedSection extends StatefulWidget {
+  const ExpandedSection({super.key, this.expand = false, required this.child});
+
+  final Widget child;
+  final bool expand;
+
+  @override
+  _ExpandedSectionState createState() => _ExpandedSectionState();
+}
+
+class _ExpandedSectionState extends State<ExpandedSection>
+    with SingleTickerProviderStateMixin {
+  late Animation<double> animation;
+  late AnimationController expandController;
+
+  @override
+  void didUpdateWidget(ExpandedSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _runExpandCheck();
+  }
+
+  @override
+  void dispose() {
+    expandController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _prepareAnimations();
+    _runExpandCheck();
+  }
+
+  ///Setting up the animation
+  void _prepareAnimations() {
+    expandController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 500));
+    animation = CurvedAnimation(
+      parent: expandController,
+      curve: Curves.fastOutSlowIn,
+    );
+  }
+
+  void _runExpandCheck() {
+    if (widget.expand) {
+      expandController.forward();
+    } else {
+      expandController.reverse();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizeTransition(
+        axisAlignment: 1.0, sizeFactor: animation, child: widget.child);
   }
 }

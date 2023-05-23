@@ -13,3 +13,5 @@
 2. encrypt the key using the password hash
 3. store the encrypted key securely
 4. dispose of hashed password
+
+### [Expanding section code url](https://stackoverflow.com/a/54173729/14928208)

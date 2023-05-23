@@ -1,7 +1,7 @@
 interface class DecryptionResult {
   const DecryptionResult(this.result);
 
-  final String? result;
+  final List<int>? result;
 }
 
 final class DecryptionSuccess extends DecryptionResult {
