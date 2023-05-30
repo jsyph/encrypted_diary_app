@@ -1,4 +1,0 @@
-enum StorageAccessStatus {
-  granted,
-  wrongPassword;
-}

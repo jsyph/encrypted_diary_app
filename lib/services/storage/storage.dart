@@ -1,33 +1,32 @@
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 
-import '../models/models.dart';
-import '../security/security.dart';
 import 'exceptions.dart';
-import 'storage_access.dart';
+import 'models/models.dart';
+import '../security/security.dart';
+
+export 'models/models.dart' show DiaryRecord;
 
 const _defaultRecordsBoxName = 'records';
 
 /// Responsible for managing the encrypted storage
 final class Storage {
-  const Storage._();
+  const Storage();
+
+  static void registerAdapters() {
+    Hive.registerAdapter(RecordAdapter());
+  }
 
   static Box<DiaryRecord>? _box;
-  static final _security = Security();
-
-  static Future<Storage> init() async {
-    await Hive.initFlutter();
-    Hive.registerAdapter(RecordAdapter());
-
-    return const Storage._();
-  }
+  static const _security = StorageSecurity();
 
   /// Creates a new encrypted box if non exist
   /// or Retrieves a previously opened encrypted box
-  Future<StorageAccessStatus> open(String userPassword) async {
+  /// Returns true if successful
+  Future<bool> open(String userPassword) async {
     // if _box is not null then return StorageAccessStatus.granted
     if (_box != null) {
-      return StorageAccessStatus.granted;
+      return true;
     }
     // If there is no key stored and no box exists then create new key and box
     if (!(await _security.hiveKeyExists()) &&
@@ -38,7 +37,7 @@ final class Storage {
           await _security.newHiveKey(userPassword),
         ),
       );
-      return StorageAccessStatus.granted;
+      return true;
     }
 
     final decryptionResult = await _security.getHiveKey(userPassword);
@@ -48,10 +47,10 @@ final class Storage {
         _defaultRecordsBoxName,
         encryptionCipher: HiveAesCipher(decryptionResult.result!),
       );
-      return StorageAccessStatus.granted;
+      return true;
     } else {
       // password is wrong
-      return StorageAccessStatus.wrongPassword;
+      return false;
     }
   }
 
@@ -72,7 +71,7 @@ final class Storage {
   }
 
   /// Modifies an existing record by its id
-  Future<void> modify(String id, {String? title, String? content}) async {
+  Future<void> modify(String id, String? title, String? content) async {
     final record = _box!.get(id);
 
     if (record == null) {
@@ -101,7 +100,11 @@ final class Storage {
     return _box!.toMap().values.toList();
   }
 
-  Future<void> delete() async {
-    await _box!.deleteFromDisk();
+  /// Clears all values from storage, without deleting the box
+  Future<void> clear() async {
+    // delete all values from box, without closing the box
+    await _box!.deleteAll(
+      _box!.values.map((e) => e.id),
+    );
   }
 }

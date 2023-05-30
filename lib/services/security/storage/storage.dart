@@ -3,9 +3,8 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:local_auth/local_auth.dart';
 
-import '../logging.dart';
+import '../../logging.dart';
 import 'decryption_result.dart';
 import 'exceptions.dart';
 
@@ -16,16 +15,15 @@ const _defaultSecureStorageKeyName = 'key';
 const _defaultSecureStorageKeyHashName = 'key_hash';
 const _defaultHiveSecureKeyLength = 32;
 
-/// Contains all the methods necessary to securely hash, encrypt, decrypt data, and authenticate user biometrics
+/// Contains all the methods necessary to securely hash, encrypt, and decrypt data
 /// Things that are stored on the phone:
 /// - hashed unencrypted password
 /// - encrypted hive key
-final class Security {
-  static final _localAuthentication = LocalAuthentication();
+final class StorageSecurity {
   static final _logger = Logging().logger;
   static const _secureKeyStorage = FlutterSecureStorage();
 
-  const Security();
+  const StorageSecurity();
 
   /// Checks if a hive key is found
   Future<bool> hiveKeyExists() async {
@@ -40,21 +38,9 @@ final class Security {
   /// Creates a new hive key, and securely stores it
   Future<List<int>> newHiveKey(String userPassword) async {
     final secureRandom = SecureRandom(_defaultHiveSecureKeyLength);
-    await storeHiveKey(userPassword, secureRandom.utf8);
+    await storeHiveKey(userPassword, secureRandom.base64);
 
     return secureRandom.bytes;
-  }
-
-  /// Authenticate Biometrics
-  Future<bool> authenticateBiometrics() async {
-    final isAuthenticated = await _localAuthentication.authenticate(
-      localizedReason: 'Please Authenticate to Enter',
-      options: const AuthenticationOptions(
-        stickyAuth: true,
-        sensitiveTransaction: true,
-      ),
-    );
-    return isAuthenticated;
   }
 
   /// Retrieves and decrypts the Hive encryption key using a password String
