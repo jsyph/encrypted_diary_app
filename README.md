@@ -8,4 +8,5 @@ An over-engineered overly-secured diary taking app, created to protect your deep
   - [x] Simplify Code and refactor
   - [ ] Create Tags
   - [ ] Add preferences (Theme color, name)
-  - [ ] Add ability to export all notes as encrypted zip file with uniquely generated password
+  - [ ] Add ability to export all notes as encrypted zip file with uniquely generated passwordcls
+  

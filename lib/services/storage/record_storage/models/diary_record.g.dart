@@ -6,7 +6,7 @@ part of 'diary_record.dart';
 // TypeAdapterGenerator
 // **************************************************************************
 
-class RecordAdapter extends TypeAdapter<DiaryRecord> {
+class DiaryRecordAdapter extends TypeAdapter<DiaryRecord> {
   @override
   final int typeId = 0;
 
@@ -47,7 +47,7 @@ class RecordAdapter extends TypeAdapter<DiaryRecord> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is RecordAdapter &&
+      other is DiaryRecordAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

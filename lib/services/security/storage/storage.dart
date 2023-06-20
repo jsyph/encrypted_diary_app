@@ -77,7 +77,7 @@ final class StorageSecurity {
     if (hiveDecryptedKeyHash == storedKeyHash) {
       _logger.i('Decryption Success');
       return DecryptionSuccess(
-        utf8.encode(hiveDecryptedKey),
+        base64Decode(hiveDecryptedKey),
       );
     }
 
