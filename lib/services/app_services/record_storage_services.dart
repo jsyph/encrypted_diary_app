@@ -22,12 +22,19 @@ final class RecordStorageServices {
   }
 
   /// Adds a new diary record
-  Future<void> addRecord(String title, String content) async {
-    await _storage.add(title, content);
+  Future<String> addRecord({
+    required String title,
+    required String content,
+  }) async {
+    return await _storage.add(title, content);
   }
 
   /// Modifies an existing diary record
-  Future<void> modifyRecord(String id, String? title, String? content) async {
+  Future<void> modifyRecord({
+    required String id,
+    String? title,
+    String? content,
+  }) async {
     await _storage.modify(id, title, content);
   }
 
@@ -39,5 +46,9 @@ final class RecordStorageServices {
   /// Deletes all records
   Future<void> deleteAllRecords() async {
     await _storage.clear();
+  }
+
+  DiaryRecord? getRecord(String id) {
+    return _storage.get(id);
   }
 }

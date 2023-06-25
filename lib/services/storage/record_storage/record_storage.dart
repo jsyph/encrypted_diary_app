@@ -5,6 +5,8 @@ import '../../security/security.dart';
 import 'exceptions.dart';
 import 'models/models.dart';
 
+export 'models/models.dart' show DiaryRecord;
+
 const _defaultRecordsBoxName = 'records';
 
 /// Responsible for managing the encrypted storage
@@ -32,7 +34,6 @@ final class RecordStorage {
   /// Returns true if successful
   Future<bool> open(String userPassword) async {
     if (!(await dbExists())) {
-      print('create new box');
       _box = await Hive.openBox(
         _defaultRecordsBoxName,
         encryptionCipher: HiveAesCipher(
@@ -100,6 +101,11 @@ final class RecordStorage {
 
   List<DiaryRecord> all() {
     return _box!.toMap().values.toList();
+  }
+
+  /// Get record by id
+  DiaryRecord? get(String id) {
+    return _box!.get(id);
   }
 
   /// Clears all values from storage, without deleting the box

@@ -1,8 +1,10 @@
-import '../services/storage/storage.dart';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../services/services.dart';
+import '../services/storage/storage.dart';
+import 'flutter_quill/flutter_quill.dart' as quill;
 
 final _dateTimeFormat = DateFormat('MMMM dd, yyyy');
 
@@ -33,7 +35,10 @@ class RecordCard extends StatelessWidget {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       Text(
-                        record.content,
+                        // convert the document json to plain text
+                        quill.Document.fromJson(
+                          jsonDecode(record.content),
+                        ).toPlainText(),
                         style: Theme.of(context).textTheme.bodySmall,
                         overflow: TextOverflow.ellipsis,
                       )

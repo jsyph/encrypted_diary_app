@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'services/services.dart';
 import 'widgets/app_lock.dart' show AppLock;
@@ -8,6 +9,7 @@ import 'widgets/lock_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DiaryAppServices.initialize();
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   runApp(
     AppLock(
       builder: (arg) => const HomeWidget(),
