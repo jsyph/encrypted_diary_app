@@ -33,6 +33,7 @@ class AppLock extends StatefulWidget {
     this.backgroundLockLatency = const Duration(seconds: 0),
     this.theme,
     this.darkTheme,
+    this.navigatorObservers,
   }) : super(key: key);
 
   final Duration backgroundLockLatency;
@@ -40,6 +41,7 @@ class AppLock extends StatefulWidget {
   final ThemeData? darkTheme;
   final bool enabled;
   final Widget lockScreen;
+  final List<NavigatorObserver>? navigatorObservers;
   final ThemeData? theme;
 
   @override
@@ -104,7 +106,7 @@ class AppLockState extends State<AppLock> with WidgetsBindingObserver {
   /// when built. Use this when you want to inject objects created from the
   /// [lockScreen] in to the rest of your app so you can better guarantee that some
   /// objects, services or databases are already instantiated before using them.
-  void didUnlock([Object? args]) {
+  void onUnlock([Object? args]) {
     if (_didUnlockForAppLaunch) {
       _didUnlockOnAppPaused();
     } else {
@@ -173,10 +175,11 @@ class AppLockState extends State<AppLock> with WidgetsBindingObserver {
       routes: {
         '/lock-screen': (context) => _lockScreen,
         '/unlocked': (context) =>
-            widget.builder(ModalRoute.of(context)!.settings.arguments)
+            widget.builder(ModalRoute.of(context)?.settings.arguments),
       },
       theme: widget.theme,
       darkTheme: widget.darkTheme,
+      navigatorObservers: widget.navigatorObservers ?? [],
     );
   }
 }

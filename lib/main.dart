@@ -13,9 +13,10 @@ void main() async {
   runApp(
     AppLock(
       builder: (arg) => const HomeWidget(),
-      lockScreen: LockScreen(),
+      lockScreen: const LockScreen(),
       theme: lightTheme,
       darkTheme: darkTheme,
+      navigatorObservers: [HomeWidget.routeObserver],
     ),
   );
 }

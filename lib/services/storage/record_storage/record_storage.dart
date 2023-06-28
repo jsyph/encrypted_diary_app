@@ -21,10 +21,6 @@ final class RecordStorage {
   static const _security = StorageSecurity();
 
   Future<bool> dbExists() async {
-    if (_box == null) {
-      return false;
-    }
-
     return await _security.hiveKeyExists() &&
         await Hive.boxExists(_defaultRecordsBoxName);
   }
@@ -33,22 +29,24 @@ final class RecordStorage {
   /// or Retrieves a previously opened encrypted box
   /// Returns true if successful
   Future<bool> open(String userPassword) async {
-    if (!(await dbExists())) {
-      _box = await Hive.openBox(
-        _defaultRecordsBoxName,
-        encryptionCipher: HiveAesCipher(
-          await _security.newHiveKey(userPassword),
-        ),
-      );
-      return true;
+    if (_box == null) {
+      if (!(await dbExists())) {
+        _box = await Hive.openBox(
+          _defaultRecordsBoxName,
+          encryptionCipher: HiveAesCipher(
+            await _security.newHiveKey(userPassword),
+          ),
+        );
+        return true;
+      }
     }
 
-    final decryptionResult = await _security.getHiveKey(userPassword);
+    final result = await _security.getHiveKey(userPassword);
     // if the password was wrong, then return wrong password
-    if (decryptionResult is DecryptionSuccess) {
+    if (result is DecryptionSuccess) {
       _box = await Hive.openBox(
         _defaultRecordsBoxName,
-        encryptionCipher: HiveAesCipher(decryptionResult.result!),
+        encryptionCipher: HiveAesCipher(result.result!),
       );
       return true;
     } else {
@@ -95,7 +93,7 @@ final class RecordStorage {
   }
 
   /// Removes a record by its id
-  Future<void> remove(String id) async {
+  Future<void> delete(String id) async {
     await _box!.delete(id);
   }
 
@@ -109,7 +107,7 @@ final class RecordStorage {
   }
 
   /// Clears all values from storage, without deleting the box
-  Future<void> clear() async {
+  Future<void> deleteAll() async {
     // delete all values from box, without closing the box
     await _box!.deleteAll(
       _box!.values.map((e) => e.id),

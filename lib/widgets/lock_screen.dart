@@ -1,140 +1,153 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screen_lock/flutter_screen_lock.dart';
-import 'package:local_auth/local_auth.dart';
 
 import '../services/services.dart';
 import 'app_lock.dart';
 
-class LockScreen extends StatelessWidget {
-  LockScreen({super.key});
+class LockScreen extends StatefulWidget {
+  const LockScreen({super.key});
 
-  final scaffoldState = GlobalKey<ScaffoldState>();
+  @override
+  State<LockScreen> createState() => _LockScreenState();
+}
 
-  Future<bool> _localAuth(
-      {required Future<void> Function() onException}) async {
-    final localAuth = LocalAuthentication();
-    try {
-      final didAuthenticate = await localAuth.authenticate(
-        options: const AuthenticationOptions(
-          sensitiveTransaction: true,
-          useErrorDialogs: true,
-          biometricOnly: true,
-          stickyAuth: true,
-        ),
-        localizedReason: 'Authenticate to continue.',
-      );
-      return didAuthenticate;
-    } on PlatformException catch (_) {
-      await onException();
-      return false;
-    }
+class _LockScreenState extends State<LockScreen> {
+  bool _blockInput = false;
+
+  ScreenLockConfig _screenLockConfig(BuildContext context) {
+    return ScreenLockConfig(
+      titleTextStyle: _getTitleTextStyle(context),
+      backgroundColor: Theme.of(context).primaryColor,
+      buttonStyle: ElevatedButton.styleFrom(
+        foregroundColor: Theme.of(context).primaryColorLight,
+        side: const BorderSide(width: 0, color: Colors.transparent),
+      ),
+    );
+  }
+
+  TextStyle _getTitleTextStyle(BuildContext context) {
+    return Theme.of(context).textTheme.titleLarge!.copyWith(
+          color: Theme.of(context).primaryColorLight,
+        );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: scaffoldState,
-      body: FutureBuilder(
-        future: DiaryAppServices.records.databaseExists(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
+    return Builder(
+      builder: (context) {
+        return IgnorePointer(
+          ignoring: _blockInput,
+          child: Scaffold(
+            body: FutureBuilder(
+              future: DiaryAppServices.records.dbExists(),
+              builder: (context, snapshot) {
+                if (snapshot.data == null) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
 
-          if (!snapshot.data!) {
-            return ScreenLock.create(
-              onConfirmed: (value) async {
-                AppLock.of(context)!.didUnlock();
-                await DiaryAppServices.records.openDatabase(value);
-              },
-              digits: 6,
-              title: const Column(
-                children: [
-                  Text("You don't have a password"),
-                  Text('Create a new one.'),
-                  Text(
-                    'This can only be done once.',
-                    style: TextStyle(color: Colors.red),
-                  )
-                ],
-              ),
-              confirmTitle: const Column(
-                children: [
-                  Text("You're nearly there."),
-                  Text('Confirm your new password.'),
-                ],
-              ),
-              config: _screenLockConfig(context),
-            );
-          }
+                if (!(snapshot.data!)) {
+                  return ScreenLock.create(
+                    onConfirmed: (value) async {
+                      await DiaryAppServices.records.open(value);
 
-          bool isBiometricAuthenticated = false;
-
-          return ScreenLock(
-            useBlur: false,
-            correctString: '||||||',
-            customizedButtonChild: const Icon(Icons.fingerprint),
-            customizedButtonTap: () async =>
-                isBiometricAuthenticated = await _localAuth(
-              onException: () async {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    showCloseIcon: true,
-                    duration: Duration(seconds: 30),
-                    content: Column(
+                      if (mounted) {
+                        AppLock.of(context)!.onUnlock();
+                      }
+                    },
+                    digits: 6,
+                    title: Column(
                       children: [
-                        Text('Biometrics are disabled for 30 seconds'),
-                        Text('All attempts will be ignored.')
+                        Text(
+                          "You don't have a password",
+                          style: _getTitleTextStyle(context),
+                        ),
+                        Text(
+                          'Create a new one.',
+                          style: _getTitleTextStyle(context),
+                        ),
+                        const Text(
+                          'This can only be done once.',
+                          style: TextStyle(color: Colors.red),
+                        )
                       ],
                     ),
+                    confirmTitle: Column(
+                      children: [
+                        Text(
+                          "You're nearly there.",
+                          style: _getTitleTextStyle(context),
+                        ),
+                        Text(
+                          'Confirm your new password.',
+                          style: _getTitleTextStyle(context),
+                        ),
+                        const Text(''),
+                      ],
+                    ),
+                    config: _screenLockConfig(context),
+                  );
+                }
+
+                bool isBiometricAuthenticated = false;
+
+                return ScreenLock(
+                  maxRetries: 3,
+                  retryDelay: const Duration(seconds: 15),
+                  useBlur: false,
+                  correctString: '||||||',
+                  onOpened: () async => isBiometricAuthenticated =
+                      await DiaryAppServices.security.authenticateBiometrics(
+                    onPlatformException: () {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            showCloseIcon: true,
+                            duration: Duration(seconds: 30),
+                            content: Column(
+                              children: [
+                                Text('Biometrics are disabled for 30 seconds'),
+                                Text('All attempts will be ignored.')
+                              ],
+                            ),
+                          ),
+                        );
+
+                        setState(() {
+                          _blockInput = true;
+                        });
+
+                        Timer(
+                          const Duration(seconds: 30),
+                          () => setState(() {
+                            _blockInput = false;
+                          }),
+                        );
+                      }
+                    },
                   ),
+                  title: const Text('Enter Password to Continue'),
+                  config: _screenLockConfig(context),
+                  onUnlocked: () {
+                    AppLock.of(context)!.onUnlock();
+                  },
+                  onValidate: (input) async {
+                    if (isBiometricAuthenticated &&
+                        await DiaryAppServices.records.open(input)) {
+                      isBiometricAuthenticated = false;
+                      return true;
+                    }
+                    return false;
+                  },
                 );
               },
             ),
-            onOpened: () async => isBiometricAuthenticated = await _localAuth(
-              onException: () async {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    showCloseIcon: true,
-                    duration: Duration(seconds: 30),
-                    content: Column(
-                      children: [
-                        Text('Biometrics are disabled for 30 seconds'),
-                        Text('All attempts will be ignored.')
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-            title: const Text('Enter Password to Continue'),
-            config: _screenLockConfig(context),
-            onUnlocked: () {
-              AppLock.of(context)!.didUnlock();
-            },
-            onValidate: (input) async {
-              if (isBiometricAuthenticated &&
-                  await DiaryAppServices.records.openDatabase(input)) {
-                isBiometricAuthenticated = false;
-                return true;
-              }
-              return false;
-            },
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
-}
-
-ScreenLockConfig _screenLockConfig(BuildContext context) {
-  return ScreenLockConfig(
-    themeData: Theme.of(context),
-    buttonStyle: ElevatedButton.styleFrom(
-      side: const BorderSide(width: 0, color: Colors.transparent),
-    ),
-  );
 }

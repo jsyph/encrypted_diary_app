@@ -6,7 +6,9 @@ class SecurityServices {
   static final _biometricSecurity = BiometricSecurity();
 
   /// Authenticates fingerprint
-  Future<bool> authenticateFingerPrint() async {
-    return await _biometricSecurity.authenticateFingerprint();
+  Future<bool> authenticateBiometrics(
+      {required void Function() onPlatformException}) async {
+    return await _biometricSecurity
+        .authenticateFingerprint(onPlatformException);
   }
 }

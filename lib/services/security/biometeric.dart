@@ -1,18 +1,40 @@
+import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 
-// TODO: CRATE BIOMETRIC AUTHENTICATION
 class BiometricSecurity {
   final _localAuthentication = LocalAuthentication();
 
-  Future<bool> authenticateFingerprint() async {
-    final isAuthenticated = await _localAuthentication.authenticate(
-      localizedReason: 'Authenticate Fingerprint to Enter',
-      options: const AuthenticationOptions(
-        stickyAuth: true,
-        sensitiveTransaction: true,
-        biometricOnly: true,
-      ),
-    );
-    return isAuthenticated;
+  Future<bool> authenticateFingerprint(
+    void Function() onPlatformException,
+  ) async {
+    Future<bool> doAuth() async {
+      try {
+        return await _localAuthentication.authenticate(
+          options: const AuthenticationOptions(
+            sensitiveTransaction: true,
+            useErrorDialogs: true,
+            biometricOnly: true,
+            stickyAuth: true,
+          ),
+          localizedReason: 'Authenticate to continue.',
+        );
+      } on PlatformException catch (_) {
+        onPlatformException();
+        
+        await Future.delayed(const Duration(seconds: 30));
+
+        return false;
+      }
+    }
+
+    bool didAuthenticate = false;
+    while (!didAuthenticate) {
+      if (await doAuth()) {
+        didAuthenticate = true;
+        return true;
+      }
+    }
+
+    return false;
   }
 }

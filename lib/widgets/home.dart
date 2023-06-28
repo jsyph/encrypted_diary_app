@@ -1,4 +1,5 @@
-import 'package:animations/animations.dart';
+import 'package:encrypted_diary_app/services/storage/record_storage/models/diary_record.dart';
+import 'package:encrypted_diary_app/widgets/settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:page_transition/page_transition.dart';
@@ -11,38 +12,62 @@ import 'record_view.dart';
 class HomeWidget extends StatefulWidget {
   const HomeWidget({super.key});
 
+  static final RouteObserver<PageRoute> routeObserver =
+      RouteObserver<PageRoute>();
+
   @override
   State<HomeWidget> createState() => _HomeWidgetState();
 }
 
-class _HomeWidgetState extends State<HomeWidget> {
+class _HomeWidgetState extends State<HomeWidget> with RouteAware {
+  List<DiaryRecord> _allRecords = DiaryAppServices.records.all();
   bool _showFab = true;
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    HomeWidget.routeObserver
+        .subscribe(this, ModalRoute.of(context) as PageRoute);
+  }
+
+  @override
+  void didPopNext() {
+    setState(() {
+      _allRecords = DiaryAppServices.records.all();
+    });
+  }
+
+  @override
+  void dispose() {
+    HomeWidget.routeObserver.unsubscribe(this);
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
         title: const Text('Your Encrypted Diary'),
         actions: [
           IconButton(
             onPressed: () {
-              //? Open Settings Page
+              Navigator.of(context).push(
+                PageTransition(
+                  child: const Settings(),
+                  type: PageTransitionType.rightToLeft,
+                  duration: const Duration(milliseconds: 200),
+                ),
+              );
             },
             icon: const Icon(Icons.settings),
           ),
         ],
       ),
-      body: FutureBuilder(
-        builder: (context, snapshot) {
+      body: Builder(
+        builder: (context) {
           late final Widget child;
 
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          if (_allRecords.isEmpty) {
             child = const Center(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -57,27 +82,40 @@ class _HomeWidgetState extends State<HomeWidget> {
             child = NotificationListener<UserScrollNotification>(
               onNotification: (notification) {
                 final direction = notification.direction;
-                setState(() {
-                  if (direction == ScrollDirection.reverse) {
-                    _showFab = false;
-                  } else if (direction == ScrollDirection.forward) {
-                    _showFab = true;
-                  }
-                });
+                // ignore notification if the list is empty
+                if (_allRecords.isNotEmpty) {
+                  setState(
+                    () {
+                      if (direction == ScrollDirection.reverse) {
+                        _showFab = false;
+                      } else if (direction == ScrollDirection.forward) {
+                        _showFab = true;
+                      }
+                    },
+                  );
+                  // if the list is empty and _showFab is false, then set it to true
+                } else if (!_showFab) {
+                  setState(
+                    () {
+                      _showFab = true;
+                    },
+                  );
+                }
                 return true;
               },
               child: ListView.separated(
                 itemBuilder: (context, index) {
-                  return OpenContainer(
-                    closedColor: Theme.of(context).scaffoldBackgroundColor,
-                    openColor: Theme.of(context).scaffoldBackgroundColor,
-                    middleColor: Theme.of(context).scaffoldBackgroundColor,
-                    closedBuilder: (context, action) {
-                      return RecordCard(record: snapshot.data![index]);
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        PageTransition(
+                          child: RecordView(recordId: _allRecords[index].id),
+                          type: PageTransitionType.rightToLeft,
+                          duration: const Duration(milliseconds: 200),
+                        ),
+                      );
                     },
-                    openBuilder: (context, action) {
-                      return RecordView(recordId: snapshot.data![index].id);
-                    },
+                    child: RecordCard(record: _allRecords[index]),
                   );
                 },
                 separatorBuilder: (context, index) {
@@ -86,7 +124,7 @@ class _HomeWidgetState extends State<HomeWidget> {
                     endIndent: 15,
                   );
                 },
-                itemCount: snapshot.data!.length,
+                itemCount: _allRecords.length,
               ),
             );
           }
@@ -96,7 +134,6 @@ class _HomeWidgetState extends State<HomeWidget> {
             child: child,
           );
         },
-        future: DiaryAppServices.records.allRecords(),
       ),
       floatingActionButton: AnimatedSlide(
         duration: const Duration(milliseconds: 250),
@@ -110,8 +147,8 @@ class _HomeWidgetState extends State<HomeWidget> {
               Navigator.of(context).push(
                 PageTransition(
                   child: RecordEdit(record: null),
-                  type: PageTransitionType.fade,
-                  duration: const Duration(milliseconds: 400),
+                  type: PageTransitionType.rightToLeft,
+                  duration: const Duration(milliseconds: 200),
                 ),
               );
             },

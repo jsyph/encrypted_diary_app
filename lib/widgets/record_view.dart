@@ -28,7 +28,7 @@ class _RecordViewState extends State<RecordView> {
 
   @override
   void initState() {
-    _record = DiaryAppServices.records.getRecord(widget.recordId)!;
+    _record = DiaryAppServices.records.get(widget.recordId)!;
     _titleTextController = TextEditingController(text: _record.title);
     _quillController = quill.QuillController(
       document: quill.Document.fromJson(
@@ -46,24 +46,33 @@ class _RecordViewState extends State<RecordView> {
       appBar: AppBar(
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () async {
+              await DiaryAppServices.records.delete(_record.id);
+              if (mounted) {
+                Navigator.of(context).pop();
+              }
+            },
             tooltip: 'Delete Forever',
             icon: const Icon(Icons.delete_forever),
           ),
-          IconButton(
-            onPressed: () {},
-            tooltip: 'Export',
-            icon: const Icon(Icons.ios_share),
-          ),
+          //? To be implemented 👇👇
+          // IconButton(
+          //   onPressed: () {},
+          //   tooltip: 'Export',
+          //   icon: const Icon(Icons.ios_share),
+          // ),
           IconButton.filledTonal(
             tooltip: 'Edit',
             onPressed: () {
               Navigator.of(context)
                   .pushReplacement(
                 PageTransition(
-                  child: RecordEdit(record: _record),
-                  type: PageTransitionType.fade,
-                  duration: const Duration(milliseconds: 400),
+                  child: RecordEdit(
+                    record: _record,
+                    key: widget.key,
+                  ),
+                  type: PageTransitionType.rightToLeft,
+                  duration: const Duration(milliseconds: 000),
                 ),
               )
                   .whenComplete(

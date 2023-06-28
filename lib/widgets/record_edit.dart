@@ -56,7 +56,7 @@ class RecordEdit extends StatelessWidget {
 
               // if a record is found, then modify else create a new one
               if (record != null) {
-                await DiaryAppServices.records.modifyRecord(
+                await DiaryAppServices.records.modify(
                   id: record!.id,
                   title: title,
                   content: contentJson,
@@ -75,7 +75,7 @@ class RecordEdit extends StatelessWidget {
                   );
                   return;
                 }
-                recordId = await DiaryAppServices.records.addRecord(
+                recordId = await DiaryAppServices.records.add(
                   title: title,
                   content: contentJson,
                 );
@@ -84,9 +84,12 @@ class RecordEdit extends StatelessWidget {
               if (context.mounted) {
                 Navigator.of(context).pushReplacement(
                   PageTransition(
-                    child: RecordView(recordId: recordId),
-                    type: PageTransitionType.fade,
-                    duration: const Duration(milliseconds: 300),
+                    child: RecordView(
+                      recordId: recordId,
+                      key: super.key,
+                    ),
+                    type: PageTransitionType.rightToLeft,
+                    duration: const Duration(milliseconds: 000),
                   ),
                 );
               }

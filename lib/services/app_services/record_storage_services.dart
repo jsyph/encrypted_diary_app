@@ -6,23 +6,21 @@ final class RecordStorageServices {
   static const _storage = RecordStorage();
 
   /// Opens the Database for usage
-  Future<bool> openDatabase(String userPassword) async {
-    final accessResult = await _storage.open(userPassword);
-
-    return accessResult;
+  Future<bool> open(String userPassword) async {
+    return await _storage.open(userPassword);
   }
 
-  Future<bool> databaseExists() async {
-    return _storage.dbExists();
+  Future<bool> dbExists() async {
+    return await _storage.dbExists();
   }
 
   /// Gets all records
-  Future<List<DiaryRecord>> allRecords() async {
+  List<DiaryRecord> all() {
     return _storage.all();
   }
 
   /// Adds a new diary record
-  Future<String> addRecord({
+  Future<String> add({
     required String title,
     required String content,
   }) async {
@@ -30,7 +28,7 @@ final class RecordStorageServices {
   }
 
   /// Modifies an existing diary record
-  Future<void> modifyRecord({
+  Future<void> modify({
     required String id,
     String? title,
     String? content,
@@ -39,16 +37,16 @@ final class RecordStorageServices {
   }
 
   /// Removes a diary record
-  Future<void> removeRecord(String id) async {
-    await _storage.remove(id);
+  Future<void> delete(String id) async {
+    await _storage.delete(id);
   }
 
   /// Deletes all records
-  Future<void> deleteAllRecords() async {
-    await _storage.clear();
+  Future<void> deleteAll() async {
+    await _storage.deleteAll();
   }
 
-  DiaryRecord? getRecord(String id) {
+  DiaryRecord? get(String id) {
     return _storage.get(id);
   }
 }
